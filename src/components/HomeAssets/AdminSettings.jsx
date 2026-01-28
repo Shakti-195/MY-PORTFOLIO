@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import heic2any from 'heic2any';
-import Cropper from 'react-easy-crop'; // Requirement for dynamic cropping
+import Cropper from 'react-easy-crop';
+import { db } from '../../firebase'; // Path to your firebase.js
+import { ref, set, onValue } from "firebase/database";
 
 function AdminSettings({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -51,30 +53,24 @@ function AdminSettings({ isOpen, onClose }) {
     { id: 2, type: "school", title: "12th Standard (PCM)", institution: "Shri Raghukul Vidya Peeth", period: "2021 – 2022", score: "68.8%", desc: "Specialized in Physics & Math.", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20" }
   ];
 
-  // --- LOAD DATA (Original Lines Kept) ---
-  const [profileData, setProfileData] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profileData');
-      return saved ? JSON.parse(saved) : defaultProfileData;
-    }
-    return defaultProfileData;
-  });
-
-  const [educationData, setEducationData] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('educationTimeline');
-      return saved ? JSON.parse(saved) : defaultEducation;
-    }
-    return defaultEducation;
-  });
-
+  // --- LOAD DATA FROM FIREBASE (Syncs Laptop & Mobile) ---
+  const [profileData, setProfileData] = useState(defaultProfileData);
+  const [educationData, setEducationData] = useState(defaultEducation);
   const [profilePic, setProfilePic] = useState(null);
   const [resumePdf, setResumePdf] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setProfilePic(localStorage.getItem('profilePicture'));
-      setResumePdf(localStorage.getItem('resumePdf'));
+    if (isOpen) {
+      const portfolioRef = ref(db, 'portfolioData');
+      onValue(portfolioRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          if (data.profileData) setProfileData(data.profileData);
+          if (data.educationData) setEducationData(data.educationData);
+          if (data.profilePic) setProfilePic(data.profilePic);
+          if (data.resumePdf) setResumePdf(data.resumePdf);
+        }
+      });
     }
   }, [isOpen]);
 
@@ -89,7 +85,7 @@ function AdminSettings({ isOpen, onClose }) {
     }
   };
 
-  // --- DYNAMIC IMAGE PROCESSING (Enhanced for Deployment) ---
+  // --- DYNAMIC IMAGE PROCESSING ---
   const onCropComplete = useCallback((_, pixels) => {
     setCroppedAreaPixels(pixels);
   }, []);
@@ -103,8 +99,6 @@ function AdminSettings({ isOpen, onClose }) {
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-
-      // Optimized output size for web performance and LocalStorage limits
       canvas.width = 400;
       canvas.height = 400;
 
@@ -115,9 +109,7 @@ function AdminSettings({ isOpen, onClose }) {
         0, 0, 400, 400
       );
 
-      // Deployment Ready: JPEG compression ensures images actually load on Vercel
       const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-      localStorage.setItem('profilePicture', base64Image);
       setProfilePic(base64Image);
       setImageToCrop(null);
       setShowSuccess(true);
@@ -153,45 +145,44 @@ function AdminSettings({ isOpen, onClose }) {
     reader.readAsDataURL(processedFile);
   };
 
-  // --- ORIGINAL LOGIC KEPT BELOW ---
-  const handleFileRead = (file, storageKey, stateSetter) => {
+  // --- MODIFIED FILE READ FOR CLOUD ---
+  const handleFileRead = (file, stateSetter) => {
     setUploading(true);
     setError('');
     const reader = new FileReader();
     reader.onloadend = () => {
-      try {
-        localStorage.setItem(storageKey, reader.result);
-        stateSetter(reader.result);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-      } catch (err) {
-        setError('Browser Storage Full! File too large.');
-      } finally {
-        setUploading(false);
-      }
+      stateSetter(reader.result);
+      setUploading(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     };
     reader.readAsDataURL(file);
   };
 
   const handleResumeChange = (e) => {
     const file = e.target.files[0];
-    if (file) handleFileRead(file, 'resumePdf', setResumePdf);
+    if (file) handleFileRead(file, setResumePdf);
   };
 
-  const removeProfilePic = () => {
-    localStorage.removeItem('profilePicture');
-    setProfilePic(null);
-  };
+  const removeProfilePic = () => setProfilePic(null);
 
-  const saveAllData = () => {
+  // --- SAVE TO CLOUD DATABASE ---
+  const saveAllData = async () => {
     try {
-      localStorage.setItem('profileData', JSON.stringify(profileData));
-      localStorage.setItem('educationTimeline', JSON.stringify(educationData));
+      setUploading(true);
+      await set(ref(db, 'portfolioData'), {
+        profileData,
+        educationData,
+        profilePic,
+        resumePdf
+      });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
-      setError('Failed to save data.');
+      setError('Cloud Sync Failed: ' + err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -243,8 +234,6 @@ function AdminSettings({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-6 animate-fade-in font-sans">
       <div className="relative w-full max-w-7xl h-full md:h-[90vh] flex flex-col md:flex-row bg-white dark:bg-slate-950 md:rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
-        
-        {/* --- DYNAMIC CROP MODAL --- */}
         
         {imageToCrop && (
           <div className="absolute inset-0 z-[100] bg-slate-950 flex flex-col">
@@ -304,7 +293,7 @@ function AdminSettings({ isOpen, onClose }) {
                         ))}
                     </div>
                     <div className="mt-auto p-4 hidden md:block">
-                        <button onClick={saveAllData} className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-slate-900 font-black rounded-xl shadow-lg flex items-center justify-center gap-2"><span>💾</span> Save Changes</button>
+                        <button onClick={saveAllData} className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-slate-900 font-black rounded-xl shadow-lg flex items-center justify-center gap-2"><span>💾</span> Save To Cloud</button>
                     </div>
                 </div>
 
