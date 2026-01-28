@@ -7,28 +7,36 @@ import EducationalJourney from '../components/HomeAssets/EducationalJourney';
 
 function Home() {
   const [portfolioData, setPortfolioData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Connect to the 'portfolioData' node we created in AdminSettings
     const portfolioRef = ref(db, 'portfolioData');
     
-    // This function runs automatically whenever you save in AdminSettings
     const unsubscribe = onValue(portfolioRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         setPortfolioData(data);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe(); 
   }, []);
 
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="home-page">
-      {/* We pass the cloud data as 'props' to your sections */}
       <Hero 
         data={portfolioData?.profileData} 
         profilePic={portfolioData?.profilePic} 
+        resumePdf={portfolioData?.resumePdf} // Added this to enable cloud resume downloads
       />
       <TechStack 
         stack={portfolioData?.profileData?.techStack} 

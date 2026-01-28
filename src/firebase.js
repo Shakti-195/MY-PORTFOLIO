@@ -9,12 +9,12 @@ const firebaseConfig = {
   messagingSenderId: "715947684019",
   appId: "1:715947684019:web:1a1e9d2782dc439a88c0c6",
   measurementId: "G-PPSVMH259Z",
-  // This URL is essential for connecting your code to your specific database
-  databaseURL: "https://myportfolio-4225b-default-rtdb.firebaseio.com/" 
+  // UPDATED: This now points to your Singapore (asia-southeast1) instance
+  databaseURL: "https://myportfolio-4225b-default-rtdb.asia-southeast1.firebasedatabase.app/" 
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export 'db' so you can use it in AdminSettings.jsx
+// Export 'db' so you can use it in AdminSettings.jsx and Home.jsx
 export const db = getDatabase(app);
