@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import heic2any from 'heic2any';
-import Cropper from 'react-easy-crop'; // Added for dynamic cropping
+import Cropper from 'react-easy-crop'; // Requirement for dynamic cropping
 
 function AdminSettings({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,7 +18,7 @@ function AdminSettings({ isOpen, onClose }) {
 
   const ADMIN_PASSWORD = 'Shakti9453@';
 
-  // --- THEME MAPPING (Keep Original) ---
+  // --- THEME MAPPING (Original Lines Kept) ---
   const THEME_MAP = {
     "from-cyan-400 to-blue-500": "shadow-cyan-500/20",
     "from-blue-500 to-indigo-500": "shadow-blue-500/20",
@@ -28,7 +28,7 @@ function AdminSettings({ isOpen, onClose }) {
     "from-emerald-400 to-teal-500": "shadow-emerald-500/20"
   };
 
-  // --- DEFAULT DATA (Keep Original) ---
+  // --- DEFAULT DATA (Original Lines Kept) ---
   const defaultProfileData = {
     name: 'Shakti Singh',
     tagline: 'B.Tech Student | Coding Enthusiast',
@@ -51,7 +51,7 @@ function AdminSettings({ isOpen, onClose }) {
     { id: 2, type: "school", title: "12th Standard (PCM)", institution: "Shri Raghukul Vidya Peeth", period: "2021 – 2022", score: "68.8%", desc: "Specialized in Physics & Math.", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20" }
   ];
 
-  // --- LOAD DATA (Keep Original) ---
+  // --- LOAD DATA (Original Lines Kept) ---
   const [profileData, setProfileData] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('profileData');
@@ -89,7 +89,7 @@ function AdminSettings({ isOpen, onClose }) {
     }
   };
 
-  // --- NEW DYNAMIC CROP LOGIC (Fixes Deployment Storage Issue) ---
+  // --- DYNAMIC IMAGE PROCESSING (Enhanced for Deployment) ---
   const onCropComplete = useCallback((_, pixels) => {
     setCroppedAreaPixels(pixels);
   }, []);
@@ -104,7 +104,7 @@ function AdminSettings({ isOpen, onClose }) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Set output size (Fixed 400x400 for perfect resolution vs storage balance)
+      // Optimized output size for web performance and LocalStorage limits
       canvas.width = 400;
       canvas.height = 400;
 
@@ -115,8 +115,8 @@ function AdminSettings({ isOpen, onClose }) {
         0, 0, 400, 400
       );
 
-      // Deployment Fix: Compress to 0.7 quality to stay under LocalStorage limits
-      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      // Deployment Ready: JPEG compression ensures images actually load on Vercel
+      const base64Image = canvas.toDataURL('image/jpeg', 0.8);
       localStorage.setItem('profilePicture', base64Image);
       setProfilePic(base64Image);
       setImageToCrop(null);
@@ -145,7 +145,6 @@ function AdminSettings({ isOpen, onClose }) {
       }
     }
     
-    // Instead of direct upload, trigger the Cropper
     const reader = new FileReader();
     reader.onload = () => {
       setImageToCrop(reader.result);
@@ -154,7 +153,7 @@ function AdminSettings({ isOpen, onClose }) {
     reader.readAsDataURL(processedFile);
   };
 
-  // --- REMAINING LOGIC (Keep Original) ---
+  // --- ORIGINAL LOGIC KEPT BELOW ---
   const handleFileRead = (file, storageKey, stateSetter) => {
     setUploading(true);
     setError('');
@@ -245,13 +244,13 @@ function AdminSettings({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-6 animate-fade-in font-sans">
       <div className="relative w-full max-w-7xl h-full md:h-[90vh] flex flex-col md:flex-row bg-white dark:bg-slate-950 md:rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
         
-        {/* --- DYNAMIC CROP OVERLAY (The Fix) --- */}
+        {/* --- DYNAMIC CROP MODAL --- */}
         
         {imageToCrop && (
-          <div className="absolute inset-0 z-[100] bg-slate-900 flex flex-col">
-            <div className="p-4 flex justify-between items-center bg-slate-800">
-              <h3 className="text-white font-bold">Crop Profile Picture</h3>
-              <button onClick={() => setImageToCrop(null)} className="text-slate-400">Cancel</button>
+          <div className="absolute inset-0 z-[100] bg-slate-950 flex flex-col">
+            <div className="p-4 flex justify-between items-center border-b border-slate-800">
+              <h3 className="text-white font-bold">Adjust Profile Picture</h3>
+              <button onClick={() => setImageToCrop(null)} className="text-red-500 font-bold px-4 py-2 bg-red-500/10 rounded-lg">Cancel</button>
             </div>
             <div className="relative flex-1 bg-black">
               <Cropper
@@ -266,10 +265,10 @@ function AdminSettings({ isOpen, onClose }) {
             </div>
             <div className="p-6 bg-slate-900 flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <span className="text-white text-xs">Zoom</span>
-                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(e.target.value)} className="flex-1 accent-teal-500" />
+                <span className="text-slate-400 text-sm">Zoom</span>
+                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(e.target.value)} className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none accent-teal-500 cursor-pointer" />
               </div>
-              <button onClick={createCroppedImage} className="w-full py-3 bg-teal-500 text-slate-900 font-bold rounded-xl">Save & Apply</button>
+              <button onClick={createCroppedImage} className="w-full py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-black rounded-2xl shadow-xl hover:opacity-90 transition-all">Crop & Apply Photo</button>
             </div>
           </div>
         )}
@@ -315,7 +314,7 @@ function AdminSettings({ isOpen, onClose }) {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-24">
-                        {uploading && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-bounce">Processing...</div>}
+                        {uploading && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-bounce">Processing Image...</div>}
                         {showSuccess && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-fade-in">Saved Successfully!</div>}
                         {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-500 rounded-xl">{error}</div>}
 
@@ -389,21 +388,21 @@ function AdminSettings({ isOpen, onClose }) {
                             {activeTab === 'media' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="p-8 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl text-center hover:border-teal-500 transition-all">
-                                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative border-2 border-teal-500/20">
+                                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative border-2 border-teal-500 shadow-lg shadow-teal-500/20">
                                             {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-4xl leading-[6rem]">📸</span>}
                                         </div>
                                         <h4 className="font-bold text-slate-900 dark:text-white">Profile Photo</h4>
+                                        <p className="text-[10px] text-slate-500 mb-4 uppercase tracking-tighter">Resized for deployment performance</p>
                                         <input type="file" id="pic" className="hidden" onChange={handleProfilePicChange} accept="image/*" />
-                                        <label htmlFor="pic" className="mt-4 inline-block px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-bold cursor-pointer hover:opacity-90">Upload & Crop</label>
-                                        {profilePic && <button onClick={removeProfilePic} className="block mx-auto mt-2 text-red-500 text-xs font-bold">Remove</button>}
-                                        <p className="mt-4 text-[10px] text-slate-400 uppercase tracking-widest">Supports HEIC & Auto-Optimization</p>
+                                        <label htmlFor="pic" className="inline-block px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-bold cursor-pointer hover:opacity-90">Upload & Crop</label>
+                                        {profilePic && <button onClick={removeProfilePic} className="block mx-auto mt-2 text-red-500 text-xs font-bold hover:underline">Remove Current</button>}
                                     </div>
                                     <div className="p-8 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl text-center hover:border-blue-500 transition-all">
                                         <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
                                             <span className="text-4xl">📄</span>
                                         </div>
                                         <h4 className="font-bold text-slate-900 dark:text-white">Resume PDF</h4>
-                                        <p className="text-xs text-slate-500 mb-4">{resumePdf ? '✅ Uploaded' : 'Free Size Upload'}</p>
+                                        <p className="text-xs text-slate-500 mb-4">{resumePdf ? '✅ Uploaded' : 'Storage limit applies'}</p>
                                         <input type="file" id="pdf" className="hidden" onChange={handleResumeChange} accept=".pdf" />
                                         <label htmlFor="pdf" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg font-bold cursor-pointer hover:bg-blue-700">Select PDF</label>
                                     </div>
