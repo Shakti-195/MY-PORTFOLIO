@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import heic2any from 'heic2any';
+import Cropper from 'react-easy-crop'; // Added for dynamic cropping
 
 function AdminSettings({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -9,10 +10,15 @@ function AdminSettings({ isOpen, onClose }) {
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
 
+  // --- NEW CROPPER STATE ---
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
   const ADMIN_PASSWORD = 'Shakti9453@';
 
-  // --- THEME MAPPING (Fixes the Shadow Issue) ---
-  // Tailwind needs full class names to work properly
+  // --- THEME MAPPING (Keep Original) ---
   const THEME_MAP = {
     "from-cyan-400 to-blue-500": "shadow-cyan-500/20",
     "from-blue-500 to-indigo-500": "shadow-blue-500/20",
@@ -22,7 +28,7 @@ function AdminSettings({ isOpen, onClose }) {
     "from-emerald-400 to-teal-500": "shadow-emerald-500/20"
   };
 
-  // --- DEFAULT DATA ---
+  // --- DEFAULT DATA (Keep Original) ---
   const defaultProfileData = {
     name: 'Shakti Singh',
     tagline: 'B.Tech Student | Coding Enthusiast',
@@ -45,7 +51,7 @@ function AdminSettings({ isOpen, onClose }) {
     { id: 2, type: "school", title: "12th Standard (PCM)", institution: "Shri Raghukul Vidya Peeth", period: "2021 – 2022", score: "68.8%", desc: "Specialized in Physics & Math.", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20" }
   ];
 
-  // --- LOAD DATA ---
+  // --- LOAD DATA (Keep Original) ---
   const [profileData, setProfileData] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('profileData');
@@ -83,24 +89,44 @@ function AdminSettings({ isOpen, onClose }) {
     }
   };
 
-  // --- UPLOAD LOGIC ---
-  const handleFileRead = (file, storageKey, stateSetter) => {
-    setUploading(true);
-    setError('');
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      try {
-        localStorage.setItem(storageKey, reader.result);
-        stateSetter(reader.result);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-      } catch (err) {
-        setError('Browser Storage Full! File too large.');
-      } finally {
-        setUploading(false);
-      }
-    };
-    reader.readAsDataURL(file);
+  // --- NEW DYNAMIC CROP LOGIC (Fixes Deployment Storage Issue) ---
+  const onCropComplete = useCallback((_, pixels) => {
+    setCroppedAreaPixels(pixels);
+  }, []);
+
+  const createCroppedImage = async () => {
+    try {
+      setUploading(true);
+      const image = new Image();
+      image.src = imageToCrop;
+      await new Promise((resolve) => (image.onload = resolve));
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Set output size (Fixed 400x400 for perfect resolution vs storage balance)
+      canvas.width = 400;
+      canvas.height = 400;
+
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x, croppedAreaPixels.y,
+        croppedAreaPixels.width, croppedAreaPixels.height,
+        0, 0, 400, 400
+      );
+
+      // Deployment Fix: Compress to 0.7 quality to stay under LocalStorage limits
+      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      localStorage.setItem('profilePicture', base64Image);
+      setProfilePic(base64Image);
+      setImageToCrop(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (e) {
+      setError("Crop Failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleProfilePicChange = async (e) => {
@@ -118,7 +144,34 @@ function AdminSettings({ isOpen, onClose }) {
         return;
       }
     }
-    handleFileRead(processedFile, 'profilePicture', setProfilePic);
+    
+    // Instead of direct upload, trigger the Cropper
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result);
+      setUploading(false);
+    };
+    reader.readAsDataURL(processedFile);
+  };
+
+  // --- REMAINING LOGIC (Keep Original) ---
+  const handleFileRead = (file, storageKey, stateSetter) => {
+    setUploading(true);
+    setError('');
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      try {
+        localStorage.setItem(storageKey, reader.result);
+        stateSetter(reader.result);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } catch (err) {
+        setError('Browser Storage Full! File too large.');
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleResumeChange = (e) => {
@@ -143,20 +196,9 @@ function AdminSettings({ isOpen, onClose }) {
     }
   };
 
-  // --- TIMELINE LOGIC (FIXED GLOW) ---
   const addEducation = () => {
     const defaultColor = "from-cyan-400 to-blue-500";
-    const newItem = { 
-      id: Date.now(), 
-      type: "school", 
-      title: "", 
-      institution: "", 
-      period: "", 
-      score: "", 
-      desc: "", 
-      color: defaultColor, 
-      glow: THEME_MAP[defaultColor] // Use Map for Glow
-    };
+    const newItem = { id: Date.now(), type: "school", title: "", institution: "", period: "", score: "", desc: "", color: defaultColor, glow: THEME_MAP[defaultColor] };
     setEducationData([newItem, ...educationData]);
   };
 
@@ -166,11 +208,7 @@ function AdminSettings({ isOpen, onClose }) {
     setEducationData(educationData.map(item => {
         if (item.id === id) {
             let updates = { [field]: value };
-            
-            // SMART GLOW UPDATE
-            if (field === 'color') {
-                updates.glow = THEME_MAP[value] || "shadow-cyan-500/20";
-            }
+            if (field === 'color') { updates.glow = THEME_MAP[value] || "shadow-cyan-500/20"; }
             return { ...item, ...updates };
         }
         return item;
@@ -179,15 +217,11 @@ function AdminSettings({ isOpen, onClose }) {
 
   const moveItem = (index, direction) => {
     const newData = [...educationData];
-    if (direction === 'up' && index > 0) {
-      [newData[index], newData[index - 1]] = [newData[index - 1], newData[index]];
-    } else if (direction === 'down' && index < newData.length - 1) {
-      [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
-    }
+    if (direction === 'up' && index > 0) { [newData[index], newData[index - 1]] = [newData[index - 1], newData[index]]; } 
+    else if (direction === 'down' && index < newData.length - 1) { [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]]; }
     setEducationData(newData);
   };
 
-  // Helpers
   const updateArray = (arrName, idx, val, key) => {
     setProfileData(prev => ({
         ...prev,
@@ -211,6 +245,35 @@ function AdminSettings({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-6 animate-fade-in font-sans">
       <div className="relative w-full max-w-7xl h-full md:h-[90vh] flex flex-col md:flex-row bg-white dark:bg-slate-950 md:rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
         
+        {/* --- DYNAMIC CROP OVERLAY (The Fix) --- */}
+        
+        {imageToCrop && (
+          <div className="absolute inset-0 z-[100] bg-slate-900 flex flex-col">
+            <div className="p-4 flex justify-between items-center bg-slate-800">
+              <h3 className="text-white font-bold">Crop Profile Picture</h3>
+              <button onClick={() => setImageToCrop(null)} className="text-slate-400">Cancel</button>
+            </div>
+            <div className="relative flex-1 bg-black">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <div className="p-6 bg-slate-900 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-white text-xs">Zoom</span>
+                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(e.target.value)} className="flex-1 accent-teal-500" />
+              </div>
+              <button onClick={createCroppedImage} className="w-full py-3 bg-teal-500 text-slate-900 font-bold rounded-xl">Save & Apply</button>
+            </div>
+          </div>
+        )}
+
         <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-full transition-all">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
@@ -252,7 +315,7 @@ function AdminSettings({ isOpen, onClose }) {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-24">
-                        {uploading && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-bounce">Uploading...</div>}
+                        {uploading && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-bounce">Processing...</div>}
                         {showSuccess && <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded-full shadow-xl z-50 animate-fade-in">Saved Successfully!</div>}
                         {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-500 rounded-xl">{error}</div>}
 
@@ -326,13 +389,14 @@ function AdminSettings({ isOpen, onClose }) {
                             {activeTab === 'media' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="p-8 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl text-center hover:border-teal-500 transition-all">
-                                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
+                                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative border-2 border-teal-500/20">
                                             {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-4xl leading-[6rem]">📸</span>}
                                         </div>
                                         <h4 className="font-bold text-slate-900 dark:text-white">Profile Photo</h4>
                                         <input type="file" id="pic" className="hidden" onChange={handleProfilePicChange} accept="image/*" />
-                                        <label htmlFor="pic" className="inline-block px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-bold cursor-pointer hover:opacity-90">Upload</label>
+                                        <label htmlFor="pic" className="mt-4 inline-block px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-bold cursor-pointer hover:opacity-90">Upload & Crop</label>
                                         {profilePic && <button onClick={removeProfilePic} className="block mx-auto mt-2 text-red-500 text-xs font-bold">Remove</button>}
+                                        <p className="mt-4 text-[10px] text-slate-400 uppercase tracking-widest">Supports HEIC & Auto-Optimization</p>
                                     </div>
                                     <div className="p-8 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl text-center hover:border-blue-500 transition-all">
                                         <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
