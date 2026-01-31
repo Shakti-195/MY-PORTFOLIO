@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 function TechStack({ stack, learning }) {
   // Master Mapping: This ensures that when you type a name in Admin, 
@@ -53,7 +54,13 @@ function TechStack({ stack, learning }) {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-20">
+        <motion.div 
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
           <div className="inline-block mb-6 relative">
             <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 blur-xl opacity-50"></div>
             <span className="relative px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-full text-sm font-bold shadow-xl">
@@ -63,10 +70,16 @@ function TechStack({ stack, learning }) {
           <h2 className="text-5xl lg:text-7xl font-black text-slate-900 dark:text-white mb-6">
             My Tech <span className="bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 bg-clip-text text-transparent">Arsenal</span>
           </h2>
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-4 mb-16">
+        <motion.div 
+          className="flex flex-wrap justify-center gap-4 mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true }}
+        >
           {categories.map((category) => (
             <button
               key={category}
@@ -79,14 +92,35 @@ function TechStack({ stack, learning }) {
               <span className="relative z-10">{category}</span>
             </button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Tech Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <motion.div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1
+              }
+            }
+          }}
+        >
           {filteredTech.map((tech, idx) => {
             const skillInfo = getSkillLabel(tech.level);
             return (
-              <div key={idx} className="group relative">
+              <motion.div 
+                key={idx} 
+                className="group relative"
+                variants={{
+                  hidden: { opacity: 0, y: 50 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+                }}
+              >
                 <div className={`absolute -inset-1 bg-gradient-to-r ${tech.gradient} rounded-3xl blur-lg opacity-25 group-hover:opacity-75 transition duration-500`}></div>
                 <div className="relative h-full bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 transition-all duration-300 group-hover:-translate-y-2">
                   <div className="mb-6 flex justify-between items-start">
@@ -105,13 +139,19 @@ function TechStack({ stack, learning }) {
                     <div className={`h-full bg-gradient-to-r ${skillInfo.color} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${tech.level}%` }}></div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Currently Exploring (Syncing Learning Props) */}
-        <div className="mt-24 relative">
+        <motion.div 
+          className="mt-24 relative"
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
           <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-3xl blur-2xl opacity-50"></div>
           <div className="relative bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 rounded-3xl p-12 text-center">
             <h3 className="text-4xl font-black text-white mb-8">Currently Exploring</h3>
@@ -123,7 +163,7 @@ function TechStack({ stack, learning }) {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

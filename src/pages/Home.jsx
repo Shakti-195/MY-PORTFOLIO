@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { ref, onValue } from "firebase/database";
+import { motion } from 'framer-motion';
 import Hero from '../components/HomeAssets/Hero';
 import TechStack from '../components/HomeAssets/TechStack';
 import EducationalJourney from '../components/HomeAssets/EducationalJourney';
@@ -32,20 +33,48 @@ function Home() {
   }
 
   return (
-    <div className="home-page">
-      <Hero 
-        data={portfolioData?.profileData} 
-        profilePic={portfolioData?.profilePic} 
-        resumePdf={portfolioData?.resumePdf} // Added this to enable cloud resume downloads
-      />
-      <TechStack 
-        stack={portfolioData?.profileData?.techStack} 
-        learning={portfolioData?.profileData?.currentlyLearning} 
-      />
-      <EducationalJourney 
-        education={portfolioData?.educationData} 
-      />
-    </div>
+    <motion.div 
+      className="home-page"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.3
+          }
+        }
+      }}
+    >
+      <motion.div variants={{
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+      }}>
+        <Hero 
+          data={portfolioData?.profileData} 
+          profilePic={portfolioData?.profilePic} 
+          resumePdf={portfolioData?.resumePdf} // Added this to enable cloud resume downloads
+        />
+      </motion.div>
+      <motion.div variants={{
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+      }}>
+        <TechStack 
+          stack={portfolioData?.profileData?.techStack} 
+          learning={portfolioData?.profileData?.currentlyLearning} 
+        />
+      </motion.div>
+      <motion.div variants={{
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+      }}>
+        <EducationalJourney 
+          education={portfolioData?.educationData} 
+        />
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from 'framer-motion';
 
 // Now receiving 'education' as a prop from Home.jsx
 const EducationalJourney = ({ education }) => {
@@ -74,24 +75,51 @@ const EducationalJourney = ({ education }) => {
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       {/* Header */}
-      <div className="text-center mb-24 relative z-10">
+      <motion.div 
+        className="text-center mb-24 relative z-10"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
         <h2 className="text-sm font-bold tracking-[0.3em] text-cyan-400 uppercase mb-3">Academic Path</h2>
         <h1 className="text-5xl md:text-6xl font-black text-white mb-6">
           Education <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">Timeline</span>
         </h1>
         <div className="w-24 h-1.5 bg-gradient-to-r from-cyan-400 to-purple-600 mx-auto rounded-full shadow-[0_0_15px_rgba(56,189,248,0.6)]"></div>
-      </div>
+      </motion.div>
 
       <div className="relative max-w-5xl mx-auto">
         {/* Center Gradient Line */}
         <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-cyan-500 via-blue-500 to-purple-500 md:-translate-x-1/2 h-full opacity-30"></div>
 
-        <div className="space-y-16 md:space-y-24">
+        <motion.div 
+          className="space-y-16 md:space-y-24"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.3
+              }
+            }
+          }}
+        >
           {journey.map((item, idx) => {
             const isEven = idx % 2 === 0;
             
             return (
-              <div key={item.id} className={`relative flex items-center md:justify-between ${isEven ? 'flex-row-reverse' : ''} group`}>
+              <motion.div 
+                key={item.id} 
+                className={`relative flex items-center md:justify-between ${isEven ? 'flex-row-reverse' : ''} group`}
+                variants={{
+                  hidden: { opacity: 0, x: isEven ? 50 : -50 },
+                  visible: { opacity: 1, x: 0, transition: { duration: 0.8 } }
+                }}
+              >
                 <div className="hidden md:block w-5/12"></div>
 
                 {/* Center Node */}
@@ -130,10 +158,10 @@ const EducationalJourney = ({ education }) => {
                       <div className={`absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br ${item.color} opacity-10 rounded-full blur-3xl pointer-events-none group-hover:opacity-20 transition-opacity duration-500`}></div>
                    </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 // Receives data, profilePic, and resumePdf as props from Home.jsx
 function Hero({ data, profilePic, resumePdf }) {
@@ -79,7 +80,12 @@ function Hero({ data, profilePic, resumePdf }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           
           {/* Left Content */}
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white rounded-full text-sm font-bold shadow-2xl">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -139,10 +145,15 @@ function Hero({ data, profilePic, resumePdf }) {
                 Download Resume
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Profile Card */}
-          <div className="flex justify-center lg:justify-end">
+          <motion.div 
+            className="flex justify-center lg:justify-end"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
             <div className="relative group w-full max-w-md">
               <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-[2rem] blur-2xl opacity-50"></div>
               <div className="relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-black p-10 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -179,7 +190,7 @@ function Hero({ data, profilePic, resumePdf }) {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
