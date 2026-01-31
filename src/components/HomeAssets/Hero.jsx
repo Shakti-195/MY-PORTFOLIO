@@ -1,202 +1,154 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Receives data, profilePic, and resumePdf as props from Home.jsx
-function Hero({ data, profilePic, resumePdf }) {
-  
-  // Use the cloud data passed from props, or fallback to default if loading
-  const profileData = data || {
-    name: 'Shakti Singh',
-    tagline: 'B.Tech Student | Coding Enthusiast',
-    college: 'BBDU, Lucknow',
-    specialization: 'IOTBC',
-    description: 'Pursuing B.Tech in Computer Science with specialization in IOTBC (collaboration with IBM). Passionate about web development, problem-solving, and building impactful real-world projects.',
+function Hero({ data, profilePic }) {
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
+  const [showUI, setShowUI] = useState(true);
+
+  const profile = data || {
+    name: 'SHAKTI SINGH',
+    tagline: 'B.TECH CSE (IOTBC)',
+    location: 'LUCKNOW, U.P, INDIA',
+    description: 'Pursuing B.Tech in Computer Science with specialization in IOTBC (collaboration with IBM). Passionate about web development, problem-solving, and building impactful real-world projects...',
     currentYear: '3rd Year',
-    currentSemester: '5th Sem',
+    currentSemester: '6th Sem',
     latestSGPA: 8.42,
     totalProjects: 2,
     totalSkills: '10+',
-    yearData: [{ year: '1st Year', cgpa: 8.425 }, { year: '2nd Year', cgpa: 8.46 }],
-    semesterData: [{ sem: '1st Sem', sgpa: 8.58 }, { sem: '2nd Sem', sgpa: 8.27 }, { sem: '3rd Sem', sgpa: 8.5 }, { sem: '4th Sem', sgpa: 8.42 }],
-    techStack: ['Java', 'C', 'Python', 'HTML', 'CSS', 'JavaScript', 'MySQL', 'Git'],
-    currentlyLearning: ['React', 'Tailwind CSS', 'Vite']
+    techStack: ['React', 'Python', 'Java', 'Tailwind', 'SQL', 'Git', 'HTML', 'CSS'],
+    yearData: [
+      { year: '1st Year', cgpa: 8.425 },
+      { year: '2nd Year', cgpa: 8.46 }
+    ]
   };
-
-  const downloadResume = () => {
-    // Now pulls from the Firebase resumePdf prop
-    const savedResume = resumePdf;
-    
-    if (savedResume) {
-      const byteString = atob(savedResume.split(',')[1]);
-      const mimeString = savedResume.split(',')[0].split(':')[1].split(';')[0];
-      
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([ab], { type: mimeString });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${profileData.name}-Resume.pdf`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-    } else {
-      alert('📄 No resume found on the cloud!\n\nPlease upload it via Admin Settings on your laptop.');
-    }
-  };
-
-  const academicData = (profileData.yearData || []).map((year, idx) => ({
-    ...year,
-    gradient: idx === 0 ? 'from-blue-500 via-indigo-500 to-purple-500' : 'from-teal-500 via-cyan-500 to-blue-500'
-  }));
-
-  const semesterData = (profileData.semesterData || []).map((sem, idx) => ({
-    ...sem,
-    icon: ['📘', '📗', '📙', '📕', '📓', '📔'][idx % 6]
-  }));
 
   return (
-    <section className="relative min-h-screen flex items-center px-6 pt-24 pb-12 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-black" id="home">
+    <section className="relative w-full min-h-screen flex items-start justify-center overflow-hidden bg-[#020617]" id="home">
       
-      {/* Background Shapes */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-[600px] h-[600px] bg-gradient-to-br from-teal-400/30 to-cyan-500/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 -right-20 w-[700px] h-[700px] bg-gradient-to-br from-indigo-400/30 to-purple-500/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-br from-pink-400/20 to-orange-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      {/* --- 1. DYNAMIC ANIME BACKGROUND --- */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <motion.div 
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="w-full h-full"
+        >
+          <div 
+            className="w-full h-full bg-cover bg-no-repeat opacity-65"
+            style={{ 
+              backgroundImage: `url('https://images.alphacoders.com/605/605592.png')`,
+              backgroundPosition: 'center 5%',
+              backgroundSize: 'cover'
+            }}
+          />
+        </motion.div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90"></div>
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
-          {/* Left Content */}
-          <motion.div 
-            className="space-y-8"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white rounded-full text-sm font-bold shadow-2xl">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-              </span>
-              🚀 OPEN TO OPPORTUNITIES
-            </div>
-            
-            <div className="space-y-5">
-              <h1 className="text-6xl lg:text-8xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
-                Hi, I'm{' '}
-                <span className="relative inline-block">
-                  <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent animate-gradient">
-                    {profileData.name}
-                  </span>
-                </span>
-              </h1>
-              <p className="text-3xl lg:text-4xl text-slate-700 dark:text-slate-200 font-bold">
-                {profileData.tagline}
-              </p>
-              <p className="text-xl text-teal-600 dark:text-teal-400 font-semibold flex items-center gap-2">
-                <span className="text-2xl">🎓</span>
-                {profileData.currentYear} ({profileData.currentSemester}) @ {profileData.college}
-              </p>
-            </div>
-            
-            <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl font-light">
-              {profileData.description}
-            </p>
+      {/* --- 2. EYE BUTTON (Top-Left) --- */}
+      <div className="fixed top-8 left-8 z-[100]">
+        <motion.button 
+          whileHover={{ scale: 1.1 }}
+          onClick={() => setShowUI(!showUI)}
+          className="w-12 h-12 bg-white/10 backdrop-blur-3xl text-white rounded-2xl flex items-center justify-center shadow-2xl border border-white/20"
+        >
+          <span className="text-xl">{showUI ? '👁️' : '👤'}</span>
+        </motion.button>
+      </div>
 
-            {/* Stats Row */}
-            <div className="flex flex-wrap gap-4">
-              {[
-                { value: Number(profileData.latestSGPA || 0).toFixed(2), label: 'Latest SGPA', icon: '📈', gradient: 'from-teal-500 to-cyan-600' },
-                { value: profileData.totalProjects, label: 'Projects Deployed', icon: '🚀', gradient: 'from-indigo-500 to-purple-600' },
-                { value: profileData.totalSkills, label: 'Tech Skills', icon: '💻', gradient: 'from-pink-500 to-orange-600' }
-              ].map((stat, idx) => (
-                <div key={idx} className="relative flex-1 min-w-[150px]">
-                  <div className="relative flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl">
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center text-2xl`}>
-                      {stat.icon}
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{stat.label}</p>
-                    </div>
+      {/* --- 3. CRYSTAL DASHBOARD (LOWERED POSITION) --- */}
+      <AnimatePresence>
+        {showUI && (
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            /* pt-[15vh] se card upar se 15% screen niche aa jayega 
+               pb-10 ensures it doesn't touch the bottom edge 
+            */
+            className="w-[92%] max-w-[1350px] mx-auto relative z-10 pt-[15vh] pb-10"
+          >
+            <div className="bg-white/[0.01] backdrop-blur-[10px] border border-white/10 rounded-[3.5rem] p-8 md:p-12 shadow-[0_0_80px_rgba(0,0,0,0.8)] grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-h-[80vh] overflow-y-auto scrollbar-hide">
+              
+              {/* Left Column: Info */}
+              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-3">
+                  <div className="px-4 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 text-[10px] font-black uppercase tracking-widest">
+                    {profile.location} 📍
+                  </div>
+                  <div className="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest italic">
+                    {profile.currentYear} • {profile.currentSemester}
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
-              <a href="#contact" className="px-10 py-5 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 text-white font-bold rounded-2xl shadow-2xl text-center text-lg">
-                Get In Touch
-              </a>
-              <button onClick={downloadResume} className="px-10 py-5 bg-white dark:bg-slate-900 border-3 border-teal-600 dark:border-teal-400 text-teal-600 dark:text-teal-400 font-bold rounded-2xl shadow-xl text-center text-lg">
-                Download Resume
-              </button>
-            </div>
-          </motion.div>
 
-          {/* Right Profile Card */}
-          <motion.div 
-            className="flex justify-center lg:justify-end"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <div className="relative group w-full max-w-md">
-              <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 rounded-[2rem] blur-2xl opacity-50"></div>
-              <div className="relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-black p-10 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800">
-                
-                <div className="flex flex-col items-center">
-                  <div className="relative mb-8">
-                    <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 p-1.5 shadow-2xl">
-                      {profilePic ? (
-                        <img src={profilePic} alt={profileData.name} className="w-full h-full rounded-full object-cover border-4 border-white dark:border-slate-900" />
-                      ) : (
-                        <div className="w-full h-full rounded-full bg-teal-600 flex items-center justify-center text-7xl font-black text-white">
-                          {profileData.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic uppercase leading-[0.9] tracking-tighter whitespace-nowrap drop-shadow-2xl">
+                  {profile.name}
+                </h1>
 
-                  <div className="text-center space-y-4 w-full">
-                    <h3 className="text-3xl font-black text-slate-900 dark:text-white">{profileData.name}</h3>
-                    <p className="text-slate-600 dark:text-slate-400 font-bold text-lg">B.Tech CSE ({profileData.specialization})</p>
-                    
-                    <div className="pt-6 space-y-4">
-                      <h4 className="text-base font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">📚 ACADEMICS</h4>
-                      <div className="space-y-3">
-                        {academicData.map((acad, idx) => (
-                          <div key={idx} className={`bg-gradient-to-r ${acad.gradient} rounded-2xl p-4 text-white shadow-xl`}>
-                            <p className="text-sm opacity-90 font-bold">{acad.year}</p>
-                            <p className="text-3xl font-black">{acad.cgpa} <span className="text-lg">CGPA</span></p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2">
+                  {profile.techStack.map((skill, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="max-w-2xl mx-auto lg:mx-0 p-6 rounded-3xl bg-black/50 border-l-4 border-cyan-500 text-slate-100 text-sm md:text-lg italic leading-relaxed">
+                  "{profile.description}"
+                </div>
+
+                {/* Metrics HUD */}
+                <div className="flex justify-center lg:justify-start gap-10 py-6 border-y border-white/5 font-black uppercase italic">
+                   <div className="text-center">
+                      <p className="text-3xl text-cyan-400 leading-none">{profile.latestSGPA}</p>
+                      <p className="text-[9px] text-slate-500 tracking-widest mt-2 uppercase">CGPA</p>
+                   </div>
+                   <div className="text-center">
+                      <p className="text-3xl text-white leading-none">{profile.totalProjects}</p>
+                      <p className="text-[9px] text-slate-500 tracking-widest mt-2 uppercase">Projects</p>
+                   </div>
+                   <div className="text-center">
+                      <p className="text-3xl text-white leading-none">10+</p>
+                      <p className="text-[9px] text-slate-500 tracking-widest mt-2 uppercase">Skills</p>
+                   </div>
                 </div>
               </div>
+
+              {/* Right Column: Profile Photo */}
+              <div className="lg:col-span-5 flex flex-col items-center">
+                <div className="relative cursor-pointer group mb-10" onClick={() => setIsPhotoOpen(true)}>
+                  <div className="absolute -inset-5 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 animate-spin-slow opacity-30 group-hover:opacity-80 transition-opacity"></div>
+                  <div className="absolute -inset-[3px] rounded-full bg-[#020617] z-10"></div>
+                  <div className="relative z-20 w-40 h-40 md:w-56 md:h-56 rounded-full overflow-hidden border-[6px] border-black shadow-2xl transition-transform group-hover:scale-105 duration-700">
+                    {profilePic ? (
+                      <img src={profilePic} className="w-full h-full object-cover" alt="Identity" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-900 flex items-center justify-center text-6xl font-black text-white italic">SS</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-full space-y-4 max-w-[380px]">
+                  {profile.yearData.map((acad, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-5 bg-white/[0.03] rounded-[2rem] border border-white/5 hover:bg-white/10 transition-all">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{acad.year}</span>
+                      <span className="text-2xl font-black text-white italic tracking-tighter">
+                        {acad.cgpa} <small className="text-[10px] text-cyan-400 uppercase font-black ml-1">CGPA</small>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           </motion.div>
-        </div>
-      </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
-        @keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        .animate-gradient { background-size: 200% auto; animation: gradient 3s linear infinite; }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 15s linear infinite; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
     </section>
   );
