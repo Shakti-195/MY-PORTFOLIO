@@ -23,10 +23,9 @@ function Hero({ data, profilePic }) {
   };
 
   return (
-    /* Change 1: removed h-screen and replaced with min-h-screen to allow full page scroll */
     <section className="relative w-full min-h-screen flex justify-center overflow-x-hidden bg-[#020617] selection:bg-cyan-500/30" id="home">
       
-      {/* --- 1. DYNAMIC ANIME BACKGROUND (Fixed to viewport) --- */}
+      {/* --- 1. DYNAMIC ANIME BACKGROUND --- */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <motion.div 
           animate={{ scale: [1, 1.05, 1] }}
@@ -46,32 +45,30 @@ function Hero({ data, profilePic }) {
         <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]"></div>
       </div>
 
-      {/* --- 2. EYE BUTTON (Fixed position) --- */}
-      <div className="fixed top-8 left-8 z-[100]">
+      {/* --- 2. EYE BUTTON (FIXED: Responsive Position to avoid Mobile Navbar Conflict) --- */}
+      <div className="fixed top-20 md:top-8 left-6 md:left-8 z-[150]">
         <motion.button 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowUI(!showUI)}
-          className="w-12 h-12 bg-white/10 backdrop-blur-3xl text-white rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 transition-all hover:bg-white/20"
+          className="w-12 h-12 bg-black/40 backdrop-blur-3xl text-white rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 transition-all hover:bg-white/20 active:bg-cyan-500/40"
         >
           <span className="text-xl">{showUI ? '👁️' : '👤'}</span>
         </motion.button>
       </div>
 
-      {/* --- 3. CRYSTAL DASHBOARD (FULL PAGE SCROLL) --- */}
+      {/* --- 3. CRYSTAL DASHBOARD --- */}
       <AnimatePresence>
         {showUI && (
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            /* Change 2: pt-[15vh] for top spacing, h-auto and relative for normal page flow */
             className="w-[92%] max-w-[1350px] mx-auto relative z-10 pt-[15vh] pb-24 h-auto"
           >
-            {/* Change 3: Removed max-h and overflow-y-auto so it scrolls with the main window */}
             <div className="bg-white/[0.01] backdrop-blur-[12px] border border-white/10 rounded-[3.5rem] p-8 md:p-12 lg:p-16 shadow-[0_0_80px_rgba(0,0,0,0.8)] grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              {/* Left Column: Info */}
+              {/* Info Column */}
               <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
                 <div className="flex flex-wrap justify-center lg:justify-start gap-3">
                   <div className="px-4 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(34,211,238,0.1)]">
@@ -82,11 +79,10 @@ function Hero({ data, profilePic }) {
                   </div>
                 </div>
 
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic uppercase leading-[0.9] tracking-tighter whitespace-nowrap drop-shadow-2xl">
+                <h1 className="text-4xl md:text-7xl lg:text-8xl font-black text-white italic uppercase leading-[0.9] tracking-tighter drop-shadow-2xl">
                   {profile.name}
                 </h1>
 
-                {/* Techstack Badges */}
                 <div className="flex flex-wrap justify-center lg:justify-start gap-2">
                   {profile.techStack.map((skill, i) => (
                     <span key={i} className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-cyan-400 hover:border-cyan-500/50 transition-all cursor-default">
@@ -99,24 +95,23 @@ function Hero({ data, profilePic }) {
                   "{profile.description}"
                 </div>
 
-                {/* Metrics HUD */}
                 <div className="flex justify-center lg:justify-start gap-12 py-8 border-y border-white/5 font-black uppercase italic">
                    <div className="text-center">
                       <p className="text-4xl text-cyan-400 leading-none tracking-tighter">{profile.latestSGPA}</p>
-                      <p className="text-[10px] text-slate-500 tracking-widest mt-2 uppercase">CGPA</p>
+                      <p className="text-[10px] text-slate-500 tracking-widest mt-2">CGPA</p>
                    </div>
                    <div className="text-center">
                       <p className="text-4xl text-white leading-none tracking-tighter">{profile.totalProjects}</p>
-                      <p className="text-[10px] text-slate-500 tracking-widest mt-2 uppercase">Projects</p>
+                      <p className="text-[10px] text-slate-500 tracking-widest mt-2">Projects</p>
                    </div>
                    <div className="text-center">
                       <p className="text-4xl text-white leading-none tracking-tighter">10+</p>
-                      <p className="text-[10px] text-slate-500 tracking-widest mt-2 uppercase">Skills</p>
+                      <p className="text-[10px] text-slate-500 tracking-widest mt-2">Skills</p>
                    </div>
                 </div>
               </div>
 
-              {/* Right Column: Profile Photo */}
+              {/* Profile Photo Column */}
               <div className="lg:col-span-5 flex flex-col items-center">
                 <div className="relative cursor-pointer group mb-12" onClick={() => setIsPhotoOpen(true)}>
                   <div className="absolute -inset-5 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 animate-spin-slow opacity-30 group-hover:opacity-80 transition-opacity"></div>
@@ -150,7 +145,6 @@ function Hero({ data, profilePic }) {
       <style>{`
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 15s linear infinite; }
-        /* Smooth scrolling for the whole page */
         html { scroll-behavior: smooth; }
       `}</style>
     </section>
