@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
+import Footer from './components/Footer'; // Dynamic Footer Component
 import AdminSettings from './components/HomeAssets/AdminSettings';
 import Academics from './components/HomeAssets/EducationalJourney';
 import TechStack from './components/HomeAssets/TechStack';
@@ -55,23 +56,8 @@ function App() {
           <Route path="/techstack" element={<TechStack />} />
         </Routes>
 
-        {/* --- PREMIUM FOOTER --- */}
-        <footer className="py-16 border-t border-white/5 bg-[#020617] text-center relative z-10">
-          <div className="max-w-7xl mx-auto px-6 space-y-6">
-            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500">
-              Get in touch directly at
-            </p>
-            <a 
-              href="mailto:thakurshaktisingh195@gmail.com" 
-              className="text-xl md:text-3xl font-black italic text-white hover:text-indigo-400 transition-all duration-300 uppercase tracking-tighter inline-block"
-            >
-              thakurshaktisingh195@gmail.com
-            </a>
-            <div className="pt-10 opacity-30 text-[9px] font-bold uppercase tracking-[0.3em] text-slate-500">
-              &copy; 2026 SHAKTI SINGH • BUILT WITH REACT & PRECISION
-            </div>
-          </div>
-        </footer>
+        {/* --- DYNAMIC PREMIUM FOOTER --- */}
+        <Footer />
 
         {/* Floating Settings Trigger */}
         <button
