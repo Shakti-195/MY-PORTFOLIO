@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import heic2any from 'heic2any';
 import Cropper from 'react-easy-crop';
-import { db } from '../../firebase'; // Path to your firebase.js
+import { db } from '../../firebase'; // 👈 Storage hata diya
 import { ref, set, onValue } from "firebase/database";
 
-// --- HELPER FOR LIVE ICON PREVIEW ---
+// --- HELPER FOR LIVE ICON PREVIEW (Original) ---
 const getLiveIcon = (url) => {
     if (!url) return 'fa-link text-slate-700';
     const link = url.toLowerCase();
@@ -43,7 +43,8 @@ function AdminSettings({ isOpen, onClose }) {
     "from-emerald-400 to-teal-500": "shadow-emerald-500/20"
   };
 
-  const defaultProfileData = {
+  // --- ORIGINAL DATA OBJECTS ---
+  const [profileData, setProfileData] = useState({
     name: 'Shakti Singh',
     tagline: 'B.Tech Student | Coding Enthusiast',
     college: 'BBDU, Lucknow',
@@ -58,9 +59,7 @@ function AdminSettings({ isOpen, onClose }) {
     techStack: [],
     yearData: [],
     semesterData: []
-  };
-
-  const [profileData, setProfileData] = useState(defaultProfileData);
+  });
   const [educationData, setEducationData] = useState([]);
   const [profilePic, setProfilePic] = useState(null);
   const [resumePdf, setResumePdf] = useState(null);
@@ -86,33 +85,32 @@ function AdminSettings({ isOpen, onClose }) {
     else { setError('Matrix Error: Unauthorized'); setPassword(''); }
   };
 
-  // --- ARRAY HELPERS ---
+  // --- ARRAY HELPERS (Original) ---
   const addItem = (arrName, newItem) => {
     setProfileData(prev => ({ ...prev, [arrName]: prev[arrName] ? [...prev[arrName], newItem] : [newItem] }));
   };
-
   const removeItem = (arrName, idx) => {
-    setProfileData(prev => ({ ...prev, [arrName]: prev[arrName].filter((_, i) => i !== idx) }));
+    setProfileData(prev => ({ ...prev, [arrName]: (prev[arrName] || []).filter((_, i) => i !== idx) }));
   };
-
   const updateArray = (arrName, idx, val, key) => {
     setProfileData(prev => ({ 
         ...prev, 
-        [arrName]: prev[arrName].map((item, i) => i === idx ? (key ? { ...item, [key]: val } : val) : item) 
+        [arrName]: (prev[arrName] || []).map((item, i) => i === idx ? (key ? { ...item, [key]: val } : val) : item) 
     }));
   };
 
   const saveAllData = async () => {
     try {
       setUploading(true);
+      // Pura data ek saath Database mein push hoga, koi Storage bucket nahi chahiye
       await set(ref(db, 'portfolioData'), { profileData, educationData, profilePic, resumePdf });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-      setTimeout(() => window.location.reload(), 1000);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) { setError('Sync Interrupted'); } finally { setUploading(false); }
   };
 
-  // --- IMAGE & FILE LOGIC (Original) ---
+  // --- IMAGE & FILE LOGIC ---
   const onCropComplete = useCallback((_, pixels) => { setCroppedAreaPixels(pixels); }, []);
   const createCroppedImage = async () => {
     try {
@@ -122,40 +120,43 @@ function AdminSettings({ isOpen, onClose }) {
       const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
       canvas.width = 400; canvas.height = 400;
       ctx.drawImage(image, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, 400, 400);
-      const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-      setProfilePic(base64Image); setImageToCrop(null); setShowSuccess(true);
+      setProfilePic(canvas.toDataURL('image/jpeg', 0.8));
+      setImageToCrop(null);
     } catch (e) { setError("Crop Failed"); } finally { setUploading(false); }
   };
 
   const handleProfilePicChange = async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    let processedFile = file;
-    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-      setUploading(true);
-      try {
-        const jpegBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
-        processedFile = new File([jpegBlob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
-      } catch (err) { setError('Format Error'); setUploading(false); return; }
-    }
     const reader = new FileReader();
-    reader.onload = () => { setImageToCrop(reader.result); setUploading(false); };
-    reader.readAsDataURL(processedFile);
+    reader.onload = () => { setImageToCrop(reader.result); };
+    reader.readAsDataURL(file);
   };
 
+  // --- RESUME UPLOAD (FIXED: Base64 Mode - No Storage Required) ---
   const handleResumeChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => setResumePdf(reader.result);
-        reader.readAsDataURL(file);
+    if (!file || file.type !== "application/pdf") {
+      setError("Please select a valid PDF");
+      return;
     }
+    // Limit: 500KB for Database stability
+    if (file.size > 512000) {
+      setError("File too large! Compress PDF to < 500KB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setResumePdf(reader.result); // local state update
+      setError('');
+    };
+    reader.readAsDataURL(file);
   };
 
+  // --- EDUCATION HELPERS (Original) ---
   const addEducation = () => {
     const newItem = { id: Date.now(), title: "", institution: "", period: "", score: "", color: "from-cyan-400 to-blue-500", glow: THEME_MAP["from-cyan-400 to-blue-500"] };
     setEducationData([newItem, ...educationData]);
   };
-
   const updateEducation = (id, field, value) => {
     setEducationData(educationData.map(item => item.id === id ? { ...item, [field]: value, ...(field === 'color' && { glow: THEME_MAP[value] }) } : item));
   };
@@ -171,24 +172,9 @@ function AdminSettings({ isOpen, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[999] flex items-center justify-center p-0 md:p-10 font-sans">
+    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[999] flex items-center justify-center p-0 md:p-10 font-sans text-white">
       <div className="relative w-full max-w-7xl h-full md:h-[90vh] flex flex-col md:flex-row bg-[#020617]/80 md:rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl animate-fade-in">
         
-        {/* --- CROPPER OVERLAY --- */}
-        {imageToCrop && (
-          <div className="absolute inset-0 z-[1000] bg-black flex flex-col">
-            <div className="p-8 flex justify-between items-center border-b border-white/10">
-              <h3 className="text-white text-2xl font-black uppercase italic">Avatar Sync</h3>
-              <button onClick={() => setImageToCrop(null)} className="text-red-500 font-bold px-6 py-2 bg-red-500/10 rounded-full">Abort</button>
-            </div>
-            <div className="relative flex-1"><Cropper image={imageToCrop} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} /></div>
-            <div className="p-10 bg-slate-900/50 backdrop-blur-2xl flex flex-col gap-6">
-              <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(e.target.value)} className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none accent-cyan-500" />
-              <button onClick={createCroppedImage} className="w-full py-5 bg-cyan-500 text-black font-black rounded-3xl uppercase tracking-widest hover:bg-white transition-all shadow-xl">Apply Precision Crop</button>
-            </div>
-          </div>
-        )}
-
         {/* --- SIDEBAR --- */}
         <div className="w-full md:w-80 bg-black/40 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto">
           <div className="p-10">
@@ -207,19 +193,18 @@ function AdminSettings({ isOpen, onClose }) {
           )}
 
           <div className="mt-auto p-8">
-            <button onClick={saveAllData} disabled={!isAuthenticated} className="w-full py-5 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all disabled:opacity-20">
+            <button onClick={saveAllData} disabled={!isAuthenticated || uploading} className="w-full py-5 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all disabled:opacity-20">
               {uploading ? '📡 Syncing...' : '💾 Save to Cloud'}
             </button>
           </div>
         </div>
 
-        {/* --- MAIN CONTENT AREA --- */}
-        <div className="flex-1 flex flex-col bg-transparent relative overflow-hidden">
+        {/* --- MAIN CONTENT --- */}
+        <div className="flex-1 flex flex-col relative overflow-hidden">
           <button onClick={onClose} className="absolute top-8 right-8 z-[50] text-slate-500 hover:text-white transition-all text-2xl">✕</button>
 
           <div className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar">
             {!isAuthenticated ? (
-                /* Login Form */
                 <div className="h-full flex flex-col items-center justify-center animate-fade-in">
                   <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center text-4xl mb-10 border border-white/10 shadow-inner">🔒</div>
                   <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6">
@@ -229,119 +214,86 @@ function AdminSettings({ isOpen, onClose }) {
                   {error && <p className="mt-6 text-red-500 font-black uppercase text-xs animate-bounce">{error}</p>}
                 </div>
             ) : (
-                /* Authenticated Content */
                 <div className="max-w-4xl mx-auto space-y-12 pb-20">
                     
-                    {/* PERSONAL / IDENTITY TAB */}
                     {activeTab === 'personal' && (
                         <div className="space-y-12">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 italic">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 italic font-medium">
                                 <Input label="Public Name" val={profileData.name} set={v => setProfileData({...profileData, name: v})} />
                                 <Input label="Live Location" val={profileData.location} set={v => setProfileData({...profileData, location: v})} />
                                 <Input label="Tagline" val={profileData.tagline} set={v => setProfileData({...profileData, tagline: v})} />
                                 <Input label="Institution" val={profileData.college} set={v => setProfileData({...profileData, college: v})} />
                             </div>
 
-                            {/* DYNAMIC CONTACT NUMBERS */}
                             <div className="space-y-6 border-l-2 border-emerald-500 pl-6 bg-white/[0.02] p-8 rounded-3xl">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest">Voice Connect (Numbers)</h4>
+                                    <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest">Voice Connect</h4>
                                     <button onClick={() => addItem('contactNumbers', { label: '', number: '' })} className="text-[10px] bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full">+ Add Number</button>
                                 </div>
                                 {profileData.contactNumbers?.map((item, idx) => (
                                     <div key={idx} className="flex gap-4 items-end">
                                         <div className="flex-1 grid grid-cols-2 gap-4">
-                                            <Input label="Label (e.g. WhatsApp)" val={item.label} set={v => updateArray('contactNumbers', idx, v, 'label')} />
-                                            <Input label="Phone Number" val={item.number} set={v => updateArray('contactNumbers', idx, v, 'number')} />
+                                            <Input label="Label" val={item.label} set={v => updateArray('contactNumbers', idx, v, 'label')} />
+                                            <Input label="Number" val={item.number} set={v => updateArray('contactNumbers', idx, v, 'number')} />
                                         </div>
-                                        <button onClick={() => removeItem('contactNumbers', idx)} className="mb-4 text-red-500 font-black px-2">✕</button>
+                                        <button onClick={() => removeItem('contactNumbers', idx)} className="mb-4 text-red-500">✕</button>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* DYNAMIC SOCIAL LINKS */}
                             <div className="space-y-6 border-l-2 border-cyan-500 pl-6 bg-white/[0.02] p-8 rounded-3xl">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-xs font-black text-cyan-500 uppercase tracking-widest">Digital Pulse (Socials)</h4>
+                                    <h4 className="text-xs font-black text-cyan-500 uppercase tracking-widest">Digital Pulse</h4>
                                     <button onClick={() => addItem('socialLinks', { name: '', url: '' })} className="text-[10px] bg-cyan-500/10 text-cyan-400 px-4 py-1 rounded-full">+ Add Social</button>
                                 </div>
                                 {profileData.socialLinks?.map((item, idx) => (
                                     <div key={idx} className="flex flex-col md:flex-row gap-4 items-end bg-black/20 p-6 rounded-2xl border border-white/5">
-                                        {/* LIVE PREVIEW BOX */}
                                         <div className="w-14 h-14 bg-slate-900 rounded-xl flex items-center justify-center border border-white/10 shrink-0">
                                             <i className={`fab ${getLiveIcon(item.url)} text-2xl`}></i>
                                         </div>
                                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                                            <Input label="Platform Name" val={item.name} set={v => updateArray('socialLinks', idx, v, 'name')} />
-                                            <Input label="Profile URL (Paste here)" val={item.url} set={v => updateArray('socialLinks', idx, v, 'url')} />
+                                            <Input label="Platform" val={item.name} set={v => updateArray('socialLinks', idx, v, 'name')} />
+                                            <Input label="URL" val={item.url} set={v => updateArray('socialLinks', idx, v, 'url')} />
                                         </div>
-                                        <button onClick={() => removeItem('socialLinks', idx)} className="mb-4 text-red-500 font-black px-2">✕</button>
+                                        <button onClick={() => removeItem('socialLinks', idx)} className="mb-4 text-red-500">✕</button>
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="md:col-span-2 italic">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block">The Narrative (About Me)</label>
-                                <textarea className="w-full p-6 bg-white/5 border border-white/10 rounded-[2rem] text-white outline-none focus:border-cyan-500 transition-all min-h-[150px] resize-none" value={profileData.description} onChange={e => setProfileData({...profileData, description: e.target.value})} />
+                            <div className="italic">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block tracking-tighter">Narrative Description</label>
+                                <textarea className="w-full p-6 bg-white/5 border border-white/10 rounded-[2.5rem] text-white outline-none focus:border-cyan-500 min-h-[150px] resize-none" value={profileData.description} onChange={e => setProfileData({...profileData, description: e.target.value})} />
                             </div>
                         </div>
                     )}
 
-                    {/* ACADEMIC TAB */}
-                    {activeTab === 'academic' && (
-                        <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 italic">
-                            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6">Annual Performance Data</h4>
-                            {profileData.yearData?.map((y, i) => (
-                                <div key={i} className="flex gap-4 mb-4">
-                                    <input className="flex-1 p-4 bg-black/40 rounded-2xl border border-white/5 text-white outline-none focus:border-cyan-500" value={y.year} onChange={e => updateArray('yearData', i, e.target.value, 'year')} />
-                                    <input className="w-24 p-4 bg-black/40 rounded-2xl border border-white/5 text-white outline-none focus:border-cyan-500" type="number" value={y.cgpa} onChange={e => updateArray('yearData', i, e.target.value, 'cgpa')} />
-                                    <button onClick={() => removeItem('yearData', i)} className="text-red-500 font-black">✕</button>
-                                </div>
-                            ))}
-                            <button onClick={() => addItem('yearData', { year: '', cgpa: '' })} className="text-cyan-400 font-bold text-xs mt-4 uppercase">+ Append Year</button>
-                        </div>
-                    )}
-
-                    {/* SKILLS TAB */}
-                    {activeTab === 'skills' && (
-                        <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 italic">
-                            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6 italic">Technical Arsenal</h4>
-                            <div className="flex flex-wrap gap-3">
-                                {profileData.techStack?.map((t, i) => (
-                                    <div key={i} className="flex items-center bg-cyan-500/10 border border-cyan-500/30 px-4 py-2 rounded-xl">
-                                        <input className="bg-transparent outline-none text-cyan-400 font-bold w-20 text-sm" value={t} onChange={e => updateArray('techStack', i, e.target.value)} />
-                                        <button onClick={() => removeItem('techStack', i)} className="ml-2 text-red-500 font-black">✕</button>
-                                    </div>
-                                ))}
-                                <button onClick={() => addItem('techStack', '')} className="p-2 bg-white/10 rounded-xl text-white font-black hover:bg-white/20 transition-all">Add +</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* MEDIA ASSETS TAB */}
                     {activeTab === 'media' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 italic">
-                            <div className="p-10 border-2 border-dashed border-white/10 rounded-[3rem] text-center space-y-6 bg-white/[0.02] hover:border-cyan-500 transition-all">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div className="p-10 border-2 border-dashed border-white/10 rounded-[3rem] text-center space-y-6 bg-white/[0.02]">
                                 <div className="w-40 h-40 mx-auto rounded-full overflow-hidden border-4 border-white/10 shadow-2xl">
-                                    {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="h-full bg-slate-900 flex items-center justify-center text-5xl">👤</div>}
+                                    {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="h-full bg-slate-900 flex items-center justify-center text-5xl font-black italic">👤</div>}
                                 </div>
                                 <input type="file" id="pic" className="hidden" onChange={handleProfilePicChange} accept="image/*" />
                                 <label htmlFor="pic" className="inline-block px-8 py-3 bg-cyan-500 text-black rounded-2xl font-black text-[10px] cursor-pointer tracking-widest uppercase italic">Update Avatar</label>
                             </div>
                             
-                            <div className="p-10 border-2 border-dashed border-white/10 rounded-[3rem] text-center space-y-6 bg-white/[0.02] hover:border-blue-500 transition-all">
-                                <div className="w-40 h-40 mx-auto rounded-[3rem] bg-slate-900 border border-white/5 flex items-center justify-center text-6xl italic">📄</div>
+                            <div className="p-10 border-2 border-dashed border-white/10 rounded-[3rem] text-center space-y-6 bg-white/[0.02] hover:border-blue-500 transition-all group">
+                                <div className={`w-40 h-40 mx-auto rounded-[3rem] flex flex-col items-center justify-center text-6xl italic border-4 ${resumePdf ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/10 bg-slate-900'}`}>
+                                  📄
+                                  {resumePdf && <span className="text-[10px] mt-2 font-black text-emerald-400 uppercase tracking-widest">Ready</span>}
+                                </div>
                                 <input type="file" id="resume" className="hidden" accept=".pdf" onChange={handleResumeChange} />
-                                <label htmlFor="resume" className="inline-block px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-[10px] cursor-pointer tracking-widest uppercase italic">Upload Resume PDF</label>
+                                <label htmlFor="resume" className="inline-block px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-[10px] cursor-pointer tracking-widest uppercase italic">
+                                  {resumePdf ? 'Replace CV' : 'Upload CV'}
+                                </label>
+                                {resumePdf && <p className="text-[9px] text-emerald-400 font-bold uppercase mt-2">RESUME CACHED LOCALLY. PRESS SAVE TO PUSH.</p>}
                             </div>
                         </div>
                     )}
-                    
-                    {/* TIMELINE TAB */}
+
                     {activeTab === 'journey' && (
                         <div className="space-y-6">
                             <button onClick={addEducation} className="w-full py-4 border-2 border-dashed border-white/10 rounded-3xl text-cyan-400 font-black uppercase text-xs tracking-widest hover:bg-white/5 transition-all">+ Add Milestone</button>
-                            {educationData.map((item, idx) => (
+                            {educationData.map((item) => (
                                 <div key={item.id} className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 relative group italic">
                                     <button onClick={() => setEducationData(educationData.filter(ed => ed.id !== item.id))} className="absolute top-8 right-8 text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -354,19 +306,54 @@ function AdminSettings({ isOpen, onClose }) {
                             ))}
                         </div>
                     )}
+
+                    {activeTab === 'academic' && (
+                        <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 italic">Academic Grade Buffer</h4>
+                            {(profileData.yearData || []).map((y, i) => (
+                                <div key={i} className="flex gap-4 mb-4 items-center italic">
+                                    <input className="flex-1 p-4 bg-black/40 rounded-2xl border border-white/5 text-white outline-none focus:border-cyan-500" value={y.year} placeholder="Year" onChange={e => updateArray('yearData', i, e.target.value, 'year')} />
+                                    <input className="w-24 p-4 bg-black/40 rounded-2xl border border-white/5 text-white outline-none focus:border-cyan-500" type="number" placeholder="CGPA" value={y.cgpa} onChange={e => updateArray('yearData', i, e.target.value, 'cgpa')} />
+                                    <button onClick={() => removeItem('yearData', i)} className="text-red-500 font-black">✕</button>
+                                </div>
+                            ))}
+                            <button onClick={() => addItem('yearData', { year: '', cgpa: '' })} className="text-cyan-400 font-bold text-xs mt-4 uppercase">+ Append Year</button>
+                        </div>
+                    )}
+
+                    {activeTab === 'skills' && (
+                        <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 italic">Technical Arsenal</h4>
+                            <div className="flex flex-wrap gap-3">
+                                {(profileData.techStack || []).map((t, i) => (
+                                    <div key={i} className="flex items-center bg-cyan-500/10 border border-cyan-400/30 px-4 py-2 rounded-xl">
+                                        <input className="bg-transparent outline-none text-cyan-400 font-bold w-20 text-xs italic" value={t} onChange={e => updateArray('techStack', i, e.target.value)} />
+                                        <button onClick={() => removeItem('techStack', i)} className="ml-2 text-red-500 font-black">✕</button>
+                                    </div>
+                                ))}
+                                <button onClick={() => addItem('techStack', '')} className="p-2 bg-white/10 rounded-xl text-white font-black hover:bg-white/20">Add +</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
           </div>
         </div>
-
-        {/* --- SUCCESS NOTIFICATION --- */}
-        {showSuccess && (
-          <div className="fixed bottom-12 right-12 bg-emerald-500 text-black px-10 py-5 rounded-[2rem] font-black tracking-widest uppercase text-xs shadow-2xl z-[9999] animate-bounce italic">
-            ✨ Sync Successful
-          </div>
-        )}
       </div>
 
+      {showSuccess && (
+        <div className="fixed bottom-12 right-12 bg-emerald-500 text-black px-10 py-5 rounded-full font-black uppercase text-[10px] shadow-2xl animate-bounce italic z-[1000]">
+          ✨ Sync Successful
+        </div>
+      )}
+
+      {imageToCrop && (
+        <div className="absolute inset-0 z-[1000] bg-black flex flex-col p-10">
+          <div className="relative flex-1"><Cropper image={imageToCrop} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} /></div>
+          <button onClick={createCroppedImage} className="mt-10 py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest">Crop Avatar</button>
+        </div>
+      )}
+      
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -377,10 +364,10 @@ function AdminSettings({ isOpen, onClose }) {
   );
 }
 
-const Input = ({ label, val, set, type="text" }) => (
+const Input = ({ label, val, set }) => (
   <div className="w-full">
     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block italic">{label}</label>
-    <input type={type} value={val || ''} onChange={e => set(e.target.value)} className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-cyan-500 transition-all italic font-medium" />
+    <input type="text" value={val || ''} onChange={e => set(e.target.value)} className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-cyan-500 transition-all italic font-medium" />
   </div>
 );
 
